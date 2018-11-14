@@ -1,0 +1,19 @@
+<table>
+    <tr>
+        <td>请假人： </td>
+        <td>
+            <input type="text" name="username" id="username" />
+        </td>
+    </tr>
+    <tr>
+        <td>请假原因： </td>
+        <td>
+            <input type="text" name="cause" id="cause" />
+        </td>
+    </tr>
+    <tr>
+        <td colspan="2">
+            <input type="submit" value="提交"/>
+         </td>
+    </tr>
+</table>

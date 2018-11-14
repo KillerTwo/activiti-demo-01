@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8"></meta>
+<title>Insert title here</title>
+</head>
+<body>
+	<h1>办理任务</h1>
+
+
+	<table>
+		<!-- <form action="http://localhost:8080/vacation/claim/" method="POST"> -->
+
+		<tr>
+			<td>申请人姓名：</td>
+			<td><span th:text="${vars['userName']}"></span></td>
+		</tr>
+		<tr>
+			<td>开始日期：</td>
+			<td><span th:text="${vars['startDate']}"></span></td>
+		</tr>
+		<tr>
+			<td>结束日期：</td>
+			<td><span th:text="${vars['endDate']}"></span></td>
+		</tr>
+		<tr>
+			<td>请假天数：</td>
+			<td><span th:text="${vars['days']}"></span></td>
+		</tr>
+		<tr>
+			<td>请假原因：</td>
+			<td><span th:text="${vars['reason']}"></span></td>
+		</tr>
+		<form th:action="'http://localhost:8080/vacation/complete/'+${vars['taskId']}" method="POST">
+			<tr th:each="item,userStat : ${vars['props']}">
+                <td ><label th:text="${item.name}"></label>
+                </td>
+                <td><input type="text" th:name="${item.id}" /></td>
+            </tr>
+
+			<tr>
+				<td colspan="2"><input type="submit" value="完成" /></td>
+			</tr>
+		</form>
+
+		<!-- </form> -->
+	</table>
+</body>
+</html>

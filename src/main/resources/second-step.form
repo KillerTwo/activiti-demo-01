@@ -1,0 +1,4 @@
+<input id="stuName" value="${stuName}" />
+<input id="reason" value="${reason}" />
+<input id="isAgree"  />
+<input id="detail" /> 

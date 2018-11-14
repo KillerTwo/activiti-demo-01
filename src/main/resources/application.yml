@@ -1,0 +1,32 @@
+spring: 
+   activiti: 
+      check-process-definitions: true
+      database-schema-update: true
+   devtools: 
+      restart: 
+         enabled: true
+         additional-paths: "src/main/java"
+   datasource :
+    driver : com.mysql.jdbc.Driver
+    url: jdbc:mysql://10.10.10.231:3306/OA_DB?useUnicode=true&characterEncoding=utf8&useSSL=false&allowMultiQueries=true
+    username : root
+    password : 123456
+    initsize : 10
+    maxActive : 20
+    minIdle : 10
+    maxWait : 120000
+    poolPreparedStatements : false
+    maxOpenPreparedStatements : -1
+    validationQuery : select 1
+    testOnborrow : true
+    testOnReturn : true
+    testWhileIdle : true
+    timeBetweenEvictionRunsMillis : 120000
+    filters : log4j,stat
+    jpa:
+       hibernate:
+         ddl-auto: update
+       show-sql: true
+management: 
+   security: disabled
+   

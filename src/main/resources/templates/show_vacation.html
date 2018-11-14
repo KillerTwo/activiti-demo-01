@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8"></meta>
+<title>Insert title here</title>
+</head>
+<body>
+	<h1>请假申请</h1>
+	<!-- 点击后启动请假申请流程 -->
+	<!-- <a href="#">填写请假申请单</a> -->
+	<h3 th:text="${mapData['processInstanceId']}"></h3>
+
+
+	<table>
+		<form action="http://localhost:8080/vacation/complateapply" method="post">
+		    <tr>
+		      <td>
+		          <input type="text" name="taskId" th:value="${mapData['taskId']}" />
+		      </td>
+		    </tr>
+		    
+			<tr th:each="props,userStat : ${mapData['formData']}">
+				<td th:text="${props.name}"><label th:text="${props.name}"></label>
+				</td>
+				<td><input type="text" th:name="${props.id}" /></td>
+			</tr>
+			<tr>
+				<td colspan="2" rowspan="2"><input type="submit" value="提交" /></td>
+			</tr>
+		</form>
+
+	</table>
+</body>
+</html>
