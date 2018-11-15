@@ -30,13 +30,16 @@ import org.lwt.vo.UserVO;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import org.springframework.validation.BindingResult;
+import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.servlet.ModelAndView;
 
+@CrossOrigin(origins = "*")
 @Controller
 @RequestMapping(value = "/vacation")
 public class VacationController {
@@ -63,17 +66,18 @@ public class VacationController {
      * @return
      */
     @RequestMapping(value = "/start", method = RequestMethod.GET)
-    public ModelAndView consumerStartProcess() {
+    @ResponseBody
+    public Map<String, Object> consumerStartProcess() {
         System.err.println("进入启动流程");
-        ModelAndView model = new ModelAndView();
-        Map<String, Object> map = vacationService.startProcess();
+        //Map<String, Object> map = new HashMap<>();
+       /* Map<String, Object> map = vacationService.startProcess();
         model.setViewName("show_vacation");
-        model.addObject("mapData", map);
-        
+        model.addObject("mapData", map);*/
+        Map<String, Object> map = vacationService.startProcess();
         System.err.println("formData is : "+map.get("formData"));
         System.err.println("processInstanceId is: "+map.get("processInstanceId"));
         
-        return model;
+        return map;
     }
     /**
      * param接收请求参数，填写完参数后完成对应的任务
@@ -81,19 +85,46 @@ public class VacationController {
      * @return
      */
     @RequestMapping(value = "/complateapply", method = RequestMethod.POST)
-    public ModelAndView complateApply(@RequestParam Map<String, Object> map, HttpSession session) {
+    @ResponseBody
+    public Map<String, Object> complateApply(@RequestBody Map<String, Object> vars, HttpSession session) {
+        Map<String, Object> map = new HashMap<>();
+        
         System.err.println("进入完成填写申请的流程。");
-        System.err.println("username: "+map.get("userName"));
-        System.err.println("cause: "+map.get("reason"));
-        ModelAndView model = new ModelAndView();
+        System.err.println("username: "+vars.get("userName"));
+        System.err.println("cause: "+vars.get("reason"));
+        
+        
         User user = (User) session.getAttribute("user");
-        String taskId = (String) map.get("taskId");
-        map.put("userId", user.getId());
-        String taskName = vacationService.complete(taskId, user.getId(), map);
+        System.err.println("user: "+user);
+        System.err.println("登陆的用户id是: "+ user.getId());
+        String taskId = (String) vars.get("taskId");
+        vars.put("userId", user.getId());
+        
+        String taskName = vacationService.complete(taskId, user.getId(), vars);
         System.err.println("任务名称是 ["+taskName+"]的任务已经被完成。");
-        model.addObject("taskName", taskName);
-        model.setViewName("complate");
-        return model;
+        
+        map.put("taskName", taskName);
+        map.put("success", "true");
+        return map;
+    }
+    // 取消申请
+    @RequestMapping(value = "/cancel/{taskId}", method = RequestMethod.GET)
+    @ResponseBody
+    public Map<String, Object> cancel(@PathVariable String taskId, HttpSession session) {
+        Map<String, Object> map = new HashMap<>();
+        
+        
+        User user = (User) session.getAttribute("user");
+        System.err.println("user: "+user);
+        
+        map.put("userId", user.getId());
+        // 设置取消参数,设置为y会结束流程
+        map.put("concel", "y");
+        String taskName = vacationService.complete(taskId, user.getId(), map);
+        
+        map.put("taskName", taskName);
+        map.put("success", "true");
+        return map;
     }
     
     @RequestMapping(value="/login", method=RequestMethod.GET)
@@ -103,11 +134,14 @@ public class VacationController {
     
     // 用户登录
     @RequestMapping(value="/login", method=RequestMethod.POST)
-    public String login(UserVO userForm, HttpSession session) {
+    @ResponseBody
+    public String login(@RequestBody UserVO userForm, HttpSession session) {
         System.err.println("真实姓名： "+ userForm.getLastName());
         
         User user = userService.loginValidate(userForm);
         if (user != null) {
+            System.err.println("将user用户存放到session中。"+ user);
+            //System.err.println(""user);
             // 将用户放到session中
             session.setAttribute("user", user);
             
@@ -118,6 +152,7 @@ public class VacationController {
             return "vacation";
         } else {
 //            this.loginMsg = "用户名或密码错误";
+            System.err.println("没有session用户"+ user);
             return "login";
         }
     }
@@ -135,21 +170,25 @@ public class VacationController {
      * 1 查看登陆用户的所有申请，包括查看该流程的进度
      */
     @RequestMapping(value="/processins", method=RequestMethod.GET)
-    public ModelAndView listProcessInstance(HttpSession session) {
-        ModelAndView model = new ModelAndView();
+    @ResponseBody
+    public Map<String, Object> listProcessInstance(HttpSession session) {
+        Map<String, Object> map = new HashMap<>();
         User user = (User) session.getAttribute("user");
         String userId = user.getId();
+        
         List<ProcessVO> processVos = vacationService.listVacation(userId);
-        model.addObject("procs", processVos);
-        model.setViewName("process_list");
-        return model;
+        map.put("processList", processVos);
+        
+        return map;
     }
     /**
      * 2 查看用户拥有的所有任务列表,根据url中的type,如果是candidate则查看所有任务列表，如果是assignee则查看待办理的任务列表
      * @return
      */
     @RequestMapping(value="/tasks/{type}", method=RequestMethod.GET)
-    public ModelAndView listTask(HttpSession session, @PathVariable String type) {
+    @ResponseBody
+    public Map<String, Object> listTask(HttpSession session, @PathVariable String type) {
+        Map<String, Object> map = new HashMap<>();
         ModelAndView model = new ModelAndView();
         User user = (User) session.getAttribute("user");
         String userId = user.getId();
@@ -157,59 +196,60 @@ public class VacationController {
         if("assignee".equals(type)) {
             // 查看办理人任务列表
             tasks = vacationService.listAssigneeTasks(userId);
-            model.setViewName("show_task_assignee");
+            // model.setViewName("show_task_assignee");
         }else if("candidate".equals(type)) {
             // 如果是查看候选人任务列表
             tasks = vacationService.listTasks(userId);
-            model.setViewName("show_task");
+            // model.setViewName("show_task");
         }
-        model.addObject("tasks", tasks);
+        map.put("tasks", tasks);
+        //model.addObject("tasks", tasks);
         
-        return model;
+        return map;
     }
     
     /**
      * 3 认领任务，将登陆的用户设置为指定任务的办理人
      */
     @RequestMapping(value="/claim/{taskId}")
+    @ResponseBody
     public String claim(@PathVariable String taskId, HttpSession session) {
         System.err.println("认领的任务id是：" + taskId);
-        // ModelAndView model = new ModelAndView();
         User user = (User) session.getAttribute("user");
         String userId = user.getId();
         vacationService.claim(taskId, userId);
-        return "redirect:/vacation/tasks/candidate";
+        return "认领任务成功";
     }
     
     // 打开办理页面
     @RequestMapping(value="/perform/{taskId}", method=RequestMethod.GET)
-    public ModelAndView perform(@PathVariable String taskId) {
-        ModelAndView model = new ModelAndView();
+    @ResponseBody
+    public Map<String, Object> perform(@PathVariable String taskId) {
+
         Map<String, Object> map = vacationService.handleTask(taskId);
-        model.addObject("vars", map);
-        model.setViewName("show_handle_info");
-        return model;
+        
+        return map;
     }
     
     // 完成任务
     @RequestMapping(value="/complete/{taskId}", method=RequestMethod.POST)
-    public ModelAndView complete(@RequestParam Map<String, Object> vars, @PathVariable String taskId, HttpSession session) {
-        ModelAndView model = new ModelAndView();
-        //Map<String, Object> vars = new HashMap<>();
+    @ResponseBody
+    public Map<String, Object> complete(@RequestBody Map<String, Object> vars, @PathVariable String taskId, HttpSession session) {
+        // ModelAndView model = new ModelAndView();
+        Map<String, Object> map = new HashMap<>();
         System.err.println("taskid id : "+ taskId);
-        // System.err.println("ispass is : "+ vars.get("ispass"));
         
         for (Map.Entry<String, Object> entry : vars.entrySet()) { 
             System.err.println("Key = " + entry.getKey() + ", Value = " + entry.getValue()); 
         }
         
-        model.setViewName("complate");
+        //model.setViewName("complate");
         User user = (User) session.getAttribute("user");
         String userId = user.getId();
         // 完成任务
-        vacationService.complete(taskId, vars, userId);
-        
-        return model;
+        String taskName = vacationService.completeOther(taskId, vars, userId);
+        map.put("taskName", taskName);
+        return map;
     }
     /**
      * 点击查看申请流程

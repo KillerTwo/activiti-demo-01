@@ -62,4 +62,6 @@ public interface VacationService {
      * @return
      */
     InputStream getDiagram(String processInstanceId);
+    
+    String completeOther(String taskId, Map<String, Object> vars, String userid);
 }

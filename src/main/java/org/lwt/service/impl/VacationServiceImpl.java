@@ -26,6 +26,7 @@ import org.activiti.engine.task.Task;
 import org.lwt.dao.VacationRepository;
 import org.lwt.entity.TaskVO;
 import org.lwt.entity.Vacation;
+import org.lwt.form.VacationForm;
 import org.lwt.service.VacationService;
 import org.lwt.vo.ProcessVO;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -71,11 +72,7 @@ public class VacationServiceImpl implements VacationService {
         // id返回到前端，当用户填写完申请的点击提交后，前端带着用户填写的数据和processInstanceId请求后端，完成对应的用户任务。
         System.err.println("流程启动成功。");
      // 查询第一个任务
-        List<Task> tasks = taskService.createTaskQuery()
-                .processInstanceId(processInstance.getId()).list();
-        for (Task task : tasks) {
-            System.err.println("task name: "+task.getName());
-        }
+       
         Task firstTask = taskService.createTaskQuery()
                 .processInstanceId(processInstance.getId()).singleResult();
         // 设置任务受理人
@@ -86,8 +83,18 @@ public class VacationServiceImpl implements VacationService {
         System.err.println("启动流程时taskId 是："+ firstTask.getId());
         FormData formData = formService.getTaskFormData(firstTask.getId());
         List<FormProperty> props = formData.getFormProperties();
+        
+        List<VacationForm> formList = new ArrayList<>();
+        for (FormProperty formProperty : props) {
+            VacationForm vacationForm = new VacationForm();
+            vacationForm.setKey(formProperty.getId());
+            vacationForm.setTitle(formProperty.getName());
+            vacationForm.setValue(formProperty.getValue());
+            formList.add(vacationForm);
+        }
+        
         map.put("processInstanceId", processInstance.getId());
-        map.put("formData", props);
+        map.put("formData", formList);
         map.put("taskId", firstTask.getId());
         return map;
     }
@@ -102,7 +109,9 @@ public class VacationServiceImpl implements VacationService {
         System.err.println("完成任务时的taskId 是："+ taskId);
         Task task = taskService.createTaskQuery()
                 .taskId(taskId).singleResult();
+        
         String taskName = task.getName();
+        
         taskService.setAssignee(taskId, userId);
         taskService.complete(taskId, vars);
         // 完成任务之后将对应的申请信息存入数据库中
@@ -226,10 +235,10 @@ public class VacationServiceImpl implements VacationService {
             System.err.println("任务的开始时间start time： " + userName);
             // 封装值对象
             TaskVO vo = new TaskVO();
-            vo.setProcessInstanceId(task.getProcessInstanceId());
+            // vo.setProcessInstanceId(task.getProcessInstanceId());
             vo.setRequestDate(startTime);
             vo.setRequestUser(userName);
-            vo.setTitle("请假申请");
+            vo.setTitle(userName+"的请假申请");
             vo.setTaskId(task.getId());
             vo.setProcessInstanceId(pi.getId());
             System.err.println("任务详情createTaskVOList： "+ vo);
@@ -247,47 +256,104 @@ public class VacationServiceImpl implements VacationService {
     // 办理任务页面
     public Map<String, Object> handleTask(String taskId) {
         ProcessInstance processInstance = getProcessInstance(taskId);
-        
+
         Map<String, Object> vars = new HashMap<>();
-        String startDate = (String) runtimeService.getVariable(processInstance.getId(), "startDate");
-        String endDate = (String) runtimeService.getVariable(processInstance.getId(), "endDate");
-        String userName = (String) runtimeService.getVariable(processInstance.getId(), "userName");
-        String days = (String) runtimeService.getVariable(processInstance.getId(), "days");
-        String reason = (String) runtimeService.getVariable(processInstance.getId(), "reason");
+        
         // String isPass = (String) taskService.getVariable(taskId, "ispass");
         // 获取当前任务自己的表单属性
         // taskService.getIdentityLinksForTask(taskId);
+        List<VacationForm> vacations = getFormItems(processInstance);
+        
         FormData formData = formService.getTaskFormData(taskId);
         List<FormProperty> props = formData.getFormProperties();
         for (FormProperty formProperty : props) {
-            System.err.println("办理任务页面表单属性： "+ formProperty.getName());
+            
+            VacationForm vacationForm = new VacationForm();
+            vacationForm.setTitle(formProperty.getName());
+            vacationForm.setKey(formProperty.getId());
+            vacationForm.setValue(formProperty.getValue());
+            vacationForm.setDisabled(false);
+            vacations.add(vacationForm);
+            // System.err.println("办理任务页面表单属性： "+ formProperty.getName());
         }
-        vars.put("startDate", startDate);
-        vars.put("endDate", endDate);
-        vars.put("days", days);
-        vars.put("reason", reason);
-        vars.put("userName", userName);
-        vars.put("taskId", taskId);
-        vars.put("props", props);
+        vars.put("forms", vacations);
         
         return vars;
     }
+    /**
+     *  获取指定的参数
+     * @param processInstance
+     * @return
+     */
+    public List<VacationForm> getFormItems(ProcessInstance processInstance) {
+        List<VacationForm> vacations = new ArrayList<>();
+        
+        String startDate = (String) runtimeService.getVariable(processInstance.getId(), "startDate");
+        VacationForm vacationForm = new VacationForm();
+        vacationForm.setTitle("开始时间");
+        vacationForm.setKey("startDate");
+        vacationForm.setValue(startDate);
+        vacationForm.setDisabled(true);
+        vacations.add(vacationForm);
+        
+        String endDate = (String) runtimeService.getVariable(processInstance.getId(), "endDate");
+        VacationForm vacationForm1 = new VacationForm();
+        vacationForm1.setTitle("结束时间");
+        vacationForm1.setKey("endDate");
+        vacationForm1.setValue(endDate);
+        vacationForm1.setDisabled(true);
+        vacations.add(vacationForm1);
+        
+        String userName = (String) runtimeService.getVariable(processInstance.getId(), "userName");
+        VacationForm vacationForm2 = new VacationForm();
+        vacationForm2.setTitle("申请人姓名");
+        vacationForm2.setKey("userName");
+        vacationForm2.setValue(userName);
+        vacationForm2.setDisabled(true);
+        vacations.add(vacationForm2);
+        
+        String days = (String) runtimeService.getVariable(processInstance.getId(), "days");
+        VacationForm vacationForm3 = new VacationForm();
+        vacationForm3.setTitle("请假天数");
+        vacationForm3.setKey("days");
+        vacationForm3.setValue(days);
+        vacationForm3.setDisabled(true);
+        vacations.add(vacationForm3);
+        
+        String reason = (String) runtimeService.getVariable(processInstance.getId(), "reason");
+        VacationForm vacationForm4 = new VacationForm();
+        vacationForm4.setTitle("请假原因");
+        vacationForm4.setKey("reason");
+        vacationForm4.setValue(reason);
+        vacationForm4.setDisabled(true);
+        vacations.add(vacationForm4);
+        
+        return vacations;
+    }
     
- // 审批通过任务
-    public void complete(String taskId, Map<String, Object> vars, String userid) {
+    // 审批通过任务
+    public String completeOther(String taskId, Map<String, Object> vars, String userid) {
         
         ProcessInstance pi = getProcessInstance(taskId);
+        FormData formData = formService.getTaskFormData(taskId);
+        List<FormProperty> props = formData.getFormProperties();
+        String taskName = taskService.createTaskQuery().taskId(taskId).singleResult().getName();
         // this.identityService.setAuthenticatedUserId(userid);
         // 添加评论
         // this.taskService.addComment(taskId, pi.getId(), content);
         // 完成任务
         if(!vars.isEmpty()) {
-            taskService.complete(taskId, vars);
+            Map<String, Object> map = new HashMap<>();
+            for (FormProperty formProperty : props) {
+                String key = formProperty.getId();
+                map.put(key, vars.get(key));
+            }
+            taskService.complete(taskId, map);
         }
         else {
             taskService.complete(taskId);
         }
-        
+        return taskName;
     }
     // 显示流程图
     public InputStream getDiagram(String processInstanceId) {
@@ -310,5 +376,11 @@ public class VacationServiceImpl implements VacationService {
                 .generateDiagram(model, "png", currentActs, new ArrayList<String>(), 
                 fontName, fontName, fontName,null, 1.0);
         return is;
+    }
+
+    @Override
+    public void complete(String taskId, Map<String, Object> vars, String userid) {
+        // TODO Auto-generated method stub
+        
     }
 }
