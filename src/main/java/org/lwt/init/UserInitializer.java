@@ -1,24 +1,28 @@
-/*package org.lwt.init;
+package org.lwt.init;
 
 import java.util.UUID;
 
 import org.activiti.engine.IdentityService;
+import org.activiti.engine.RepositoryService;
 import org.activiti.engine.identity.Group;
 import org.activiti.engine.identity.User;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.stereotype.Component;
 
-*//**
+/**
  * @param 在所有 Spring Beans 都初始化之后，SpringApplication.run() 之前执行做一些初始化操纵
  * @author Administrator
  *
- *//*
+ */
 @Component
 public class UserInitializer implements CommandLineRunner {
     
+    /*@Autowired
+    private IdentityService identityService;*/
+    
     @Autowired
-    private IdentityService identityService;
+    private RepositoryService repositoryService;
     
     @Override
     public void run(String... args) throws Exception {
@@ -26,7 +30,17 @@ public class UserInitializer implements CommandLineRunner {
         // 初始化用户和用户组
         // 初始化一次
         // initGroupsAndUsers(identityService);
-
+        // 部署流程资源文件
+        initProcessDefinition(repositoryService);
+    }
+    
+ // 部署流程定义
+    private void initProcessDefinition(RepositoryService repositoryService) {
+        repositoryService.createDeployment()
+        .addClasspathResource("Vacation.bpmn")
+        .addClasspathResource("vacation_form.form")
+        .deploy();
+        System.err.println("部署成功。");
     }
     
     
@@ -67,4 +81,3 @@ public class UserInitializer implements CommandLineRunner {
     }
 
 }
-*/

@@ -71,11 +71,6 @@ public class VacationServiceImpl implements VacationService {
         // id返回到前端，当用户填写完申请的点击提交后，前端带着用户填写的数据和processInstanceId请求后端，完成对应的用户任务。
         System.err.println("流程启动成功。");
      // 查询第一个任务
-        List<Task> tasks = taskService.createTaskQuery()
-                .processInstanceId(processInstance.getId()).list();
-        for (Task task : tasks) {
-            System.err.println("task name: "+task.getName());
-        }
         Task firstTask = taskService.createTaskQuery()
                 .processInstanceId(processInstance.getId()).singleResult();
         // 设置任务受理人
@@ -83,6 +78,8 @@ public class VacationServiceImpl implements VacationService {
         // 记录请假数据
         // saveVacation(vacation, pi.getId());
         
+        Object form = formService.getRenderedTaskForm(firstTask.getId());
+        System.err.println("任务的外部表单数据是："+ form.toString());
         System.err.println("启动流程时taskId 是："+ firstTask.getId());
         FormData formData = formService.getTaskFormData(firstTask.getId());
         List<FormProperty> props = formData.getFormProperties();

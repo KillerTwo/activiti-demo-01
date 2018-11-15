@@ -85,12 +85,15 @@ public class VacationController {
         System.err.println("进入完成填写申请的流程。");
         System.err.println("username: "+map.get("userName"));
         System.err.println("cause: "+map.get("reason"));
+        
         ModelAndView model = new ModelAndView();
         User user = (User) session.getAttribute("user");
         String taskId = (String) map.get("taskId");
         map.put("userId", user.getId());
         String taskName = vacationService.complete(taskId, user.getId(), map);
+        
         System.err.println("任务名称是 ["+taskName+"]的任务已经被完成。");
+        
         model.addObject("taskName", taskName);
         model.setViewName("complate");
         return model;

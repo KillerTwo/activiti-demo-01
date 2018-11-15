@@ -1,0 +1,9 @@
+<form action="" method="POST">
+        <label>申请人姓名：</label><input type="text" name="userName" />
+        <label>请假原因：</label><input type="text" name="reason" />
+        <label>开始日期：</label><input type="text" name="startDate" />
+        <label>结束日期：</label><input type="text" name="endDate" />
+        <label>请假天数：</label><input type="text" name="days" />
+        <label>请假类型：</label><input type="text" name="vacationType" />
+        <input type="submit" value="提交" />
+</form>

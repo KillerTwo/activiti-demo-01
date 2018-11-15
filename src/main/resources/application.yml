@@ -1,6 +1,6 @@
 spring: 
    activiti: 
-      check-process-definitions: true
+      check-process-definitions: false
       database-schema-update: true
    devtools: 
       restart: 
