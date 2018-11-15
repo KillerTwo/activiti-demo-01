@@ -59,7 +59,7 @@ public class VacationServiceImpl implements VacationService {
      * return ProcessInstance id(返回启动流程后对应的流程实例id)
      */
     @Override
-    public Map<String, Object> startProcess() {
+    public Map<String, Object> startProcess(String userId) {
         Map<String, Object> map = new HashMap<>();
         // 获取请假流程对应的流程定义
         /*ProcessDefinition processDefinition = repositoryService.createProcessDefinitionQuery()
@@ -70,22 +70,19 @@ public class VacationServiceImpl implements VacationService {
         // 将processInstance
         // id返回到前端，当用户填写完申请的点击提交后，前端带着用户填写的数据和processInstanceId请求后端，完成对应的用户任务。
         System.err.println("流程启动成功。");
-     // 查询第一个任务
+        // 查询第一个任务
         Task firstTask = taskService.createTaskQuery()
                 .processInstanceId(processInstance.getId()).singleResult();
-        // 设置任务受理人
-        // taskService.setAssignee(firstTask.getId(), vacation.getUserId());
-        // 记录请假数据
-        // saveVacation(vacation, pi.getId());
+        // 将第一个任务的任务办理人设置为登陆用户
+        taskService.setAssignee(firstTask.getId(), userId);
         
-        Object form = formService.getRenderedTaskForm(firstTask.getId());
-        System.err.println("任务的外部表单数据是："+ form.toString());
-        System.err.println("启动流程时taskId 是："+ firstTask.getId());
-        FormData formData = formService.getTaskFormData(firstTask.getId());
-        List<FormProperty> props = formData.getFormProperties();
+        // 获取指定任务的外部表单
+        Object taskForm = formService.getRenderedTaskForm(firstTask.getId());
+        // System.err.println("任务的外部表单数据是："+ taskForm.toString());
+        
         map.put("processInstanceId", processInstance.getId());
-        map.put("formData", props);
         map.put("taskId", firstTask.getId());
+        map.put("taskForm", taskForm.toString());
         return map;
     }
 
@@ -97,12 +94,14 @@ public class VacationServiceImpl implements VacationService {
     public String complete(String taskId, String userId, Map<String, Object> vars){
         ProcessInstance processInstance = getProcessInstance(taskId);
         System.err.println("完成任务时的taskId 是："+ taskId);
+
         Task task = taskService.createTaskQuery()
                 .taskId(taskId).singleResult();
         String taskName = task.getName();
-        taskService.setAssignee(taskId, userId);
+        System.err.println("complete taskName is "+ taskName);
         taskService.complete(taskId, vars);
         // 完成任务之后将对应的申请信息存入数据库中
+        
         saveVacation(vars, processInstance);
         
         return taskName;
@@ -131,9 +130,9 @@ public class VacationServiceImpl implements VacationService {
 
 
     private ProcessInstance getProcessInstance(String taskId) {
-        Task task = this.taskService.createTaskQuery().taskId(taskId).singleResult();
+        Task task = taskService.createTaskQuery().taskId(taskId).singleResult();
         // 根据任务查询流程实例
-        ProcessInstance pi = this.runtimeService.createProcessInstanceQuery()
+        ProcessInstance pi = runtimeService.createProcessInstanceQuery()
                 .processInstanceId(task.getProcessInstanceId()).singleResult();
         return pi;
     }
@@ -256,8 +255,11 @@ public class VacationServiceImpl implements VacationService {
         // taskService.getIdentityLinksForTask(taskId);
         FormData formData = formService.getTaskFormData(taskId);
         List<FormProperty> props = formData.getFormProperties();
-        for (FormProperty formProperty : props) {
+        /*for (FormProperty formProperty : props) {
             System.err.println("办理任务页面表单属性： "+ formProperty.getName());
+        }*/
+        if(props.size() < 2 && props.size() > 0) {
+            vars.put("props", props);
         }
         vars.put("startDate", startDate);
         vars.put("endDate", endDate);
@@ -265,7 +267,7 @@ public class VacationServiceImpl implements VacationService {
         vars.put("reason", reason);
         vars.put("userName", userName);
         vars.put("taskId", taskId);
-        vars.put("props", props);
+        
         
         return vars;
     }

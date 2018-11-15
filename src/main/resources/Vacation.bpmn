@@ -2,16 +2,7 @@
 <definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:activiti="http://activiti.org/bpmn" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:omgdc="http://www.omg.org/spec/DD/20100524/DC" xmlns:omgdi="http://www.omg.org/spec/DD/20100524/DI" typeLanguage="http://www.w3.org/2001/XMLSchema" expressionLanguage="http://www.w3.org/1999/XPath" targetNamespace="http://www.activiti.org/test">
   <process id="Vacation" name="请假申请" isExecutable="true">
     <startEvent id="startevent1" name="Start"></startEvent>
-    <userTask id="usertask1" name="填写请假申请" activiti:candidateGroups="employee" activiti:formKey="vacation_form.form">
-      <extensionElements>
-        <activiti:formProperty id="userName" name="申请人姓名" type="string"></activiti:formProperty>
-        <activiti:formProperty id="reason" name="原因" type="string"></activiti:formProperty>
-        <activiti:formProperty id="startDate" name="开始时间" type="string"></activiti:formProperty>
-        <activiti:formProperty id="endDate" name="结束时间" type="string"></activiti:formProperty>
-        <activiti:formProperty id="days" name="请假天数" type="string"></activiti:formProperty>
-        <activiti:formProperty id="vacationType" name="请假类型" type="string"></activiti:formProperty>
-      </extensionElements>
-    </userTask>
+    <userTask id="usertask1" name="填写请假申请" activiti:candidateGroups="employee" activiti:formKey="vacation_form.form"></userTask>
     <userTask id="usertask2" name="经理审批" activiti:candidateGroups="manager">
       <extensionElements>
         <activiti:formProperty id="managerPass" name="经理审核意见" type="string"></activiti:formProperty>

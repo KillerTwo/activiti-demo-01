@@ -63,15 +63,19 @@ public class VacationController {
      * @return
      */
     @RequestMapping(value = "/start", method = RequestMethod.GET)
-    public ModelAndView consumerStartProcess() {
+    public ModelAndView consumerStartProcess(HttpSession session) {
+        User user = (User) session.getAttribute("user");
+        
         System.err.println("进入启动流程");
         ModelAndView model = new ModelAndView();
-        Map<String, Object> map = vacationService.startProcess();
+        
+        Map<String, Object> map = vacationService.startProcess(user.getId());
+        
         model.setViewName("show_vacation");
         model.addObject("mapData", map);
         
-        System.err.println("formData is : "+map.get("formData"));
-        System.err.println("processInstanceId is: "+map.get("processInstanceId"));
+        /*System.err.println("formData is : "+map.get("formData"));
+        System.err.println("processInstanceId is: "+map.get("processInstanceId"));*/
         
         return model;
     }
@@ -80,16 +84,18 @@ public class VacationController {
      * @param map
      * @return
      */
-    @RequestMapping(value = "/complateapply", method = RequestMethod.POST)
-    public ModelAndView complateApply(@RequestParam Map<String, Object> map, HttpSession session) {
+    @RequestMapping(value = "/complateapply/{taskId}", method = RequestMethod.POST)
+    public ModelAndView complateApply(@PathVariable String taskId,
+            @RequestParam Map<String, Object> map, HttpSession session) {
+        
         System.err.println("进入完成填写申请的流程。");
         System.err.println("username: "+map.get("userName"));
         System.err.println("cause: "+map.get("reason"));
         
         ModelAndView model = new ModelAndView();
         User user = (User) session.getAttribute("user");
-        String taskId = (String) map.get("taskId");
         map.put("userId", user.getId());
+        
         String taskName = vacationService.complete(taskId, user.getId(), map);
         
         System.err.println("任务名称是 ["+taskName+"]的任务已经被完成。");
@@ -181,7 +187,7 @@ public class VacationController {
         User user = (User) session.getAttribute("user");
         String userId = user.getId();
         vacationService.claim(taskId, userId);
-        return "redirect:/vacation/tasks/candidate";
+        return "redirect:/vacation/tasks/assignee";
     }
     
     // 打开办理页面

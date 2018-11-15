@@ -12,7 +12,7 @@ public interface VacationService {
     /**
      * p 启动请假流程
      */
-    Map<String, Object> startProcess();
+    Map<String, Object> startProcess(String userId);
     /**
      * param 完成任务
      * @param userId

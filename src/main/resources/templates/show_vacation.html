@@ -11,7 +11,7 @@
 	<h3 th:text="${mapData['processInstanceId']}"></h3>
 
 
-	<table>
+	<!-- <table>
 		<form action="http://localhost:8080/vacation/complateapply" method="post">
 		    <tr>
 		      <td>
@@ -29,6 +29,18 @@
 			</tr>
 		</form>
 
-	</table>
+	</table> -->
+
+	<div>
+		<form
+			th:action="'http://localhost:8080/vacation/complateapply/'+${mapData['taskId']}"
+			method="POST" th:utext="${mapData['taskForm']}"></form>
+	</div>
+
+	<!-- <iframe src="img1.html" width="200" height="120"
+	   th:srcdoc="${mapData['taskForm']}">
+	   
+	</iframe> -->
+
 </body>
 </html>
