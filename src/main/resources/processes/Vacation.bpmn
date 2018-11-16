@@ -6,25 +6,25 @@
       <extensionElements>
         <activiti:formProperty id="userName" name="申请人姓名" type="string"></activiti:formProperty>
         <activiti:formProperty id="reason" name="原因" type="string"></activiti:formProperty>
-        <activiti:formProperty id="startDate" name="开始时间" type="string"></activiti:formProperty>
-        <activiti:formProperty id="endDate" name="结束时间" type="string"></activiti:formProperty>
-        <activiti:formProperty id="days" name="请假天数" type="string"></activiti:formProperty>
+        <activiti:formProperty id="startDate" name="开始时间" type="date"></activiti:formProperty>
+        <activiti:formProperty id="endDate" name="结束时间" type="date"></activiti:formProperty>
+        <activiti:formProperty id="days" name="请假天数" type="long"></activiti:formProperty>
         <activiti:formProperty id="vacationType" name="请假类型" type="string"></activiti:formProperty>
-        <activiti:formProperty id="concel" name="取消申请" type="string" default="n"></activiti:formProperty>
-        <activiti:formProperty id="isBack" name="是否是被退回的标记,如果审批不通过则将审批不通过的任务id设置给isBack" type="string" default="n"></activiti:formProperty>
+        <activiti:formProperty id="concel" name="取消申请" type="string" default="false"></activiti:formProperty>
+        <activiti:formProperty id="isBack" name="是否是被退回的标记,如果审批不通过则将审批不通过的任务id设置给isBack" type="boolean" default="false"></activiti:formProperty>
       </extensionElements>
     </userTask>
     <userTask id="usertask2" name="经理审批" activiti:candidateGroups="manager">
       <extensionElements>
         <activiti:formProperty id="pass" name="经理审核意见" type="string"></activiti:formProperty>
-        <activiti:formProperty id="noPassReason" name="不通过原因" type="string"></activiti:formProperty>
+        <activiti:formProperty id="noPassReason" name="原因" type="string"></activiti:formProperty>
         <activiti:taskListener event="complete" expression="${myTaskListener.taskBack(task)}"></activiti:taskListener>
       </extensionElements>
     </userTask>
     <userTask id="usertask3" name="总监审批" activiti:candidateGroups="director">
       <extensionElements>
         <activiti:formProperty id="pass" name="总监意见" type="string"></activiti:formProperty>
-        <activiti:formProperty id="noPassReason" name="不通过原因" type="string"></activiti:formProperty>
+        <activiti:formProperty id="noPassReason" name="原因" type="string"></activiti:formProperty>
         <activiti:taskListener event="complete" expression="${myTaskListener.taskBack(task)}"></activiti:taskListener>
       </extensionElements>
     </userTask>
@@ -58,6 +58,10 @@
       <conditionExpression xsi:type="tFormalExpression"><![CDATA[${pass == "同意"}]]></conditionExpression>
     </sequenceFlow>
     <sequenceFlow id="flow21" sourceRef="exclusivegateway3" targetRef="usertask1">
+      <extensionElements>
+        <activiti:executionListener event="take" class="org.lwt.listener.ProcessListener"></activiti:executionListener>
+        <activiti:executionListener event="take" expression="${processListener.notify(execution)}"></activiti:executionListener>
+      </extensionElements>
       <conditionExpression xsi:type="tFormalExpression"><![CDATA[${pass != "同意"}]]></conditionExpression>
     </sequenceFlow>
     <endEvent id="endevent2" name="End"></endEvent>

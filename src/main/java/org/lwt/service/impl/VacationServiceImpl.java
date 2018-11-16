@@ -72,7 +72,7 @@ public class VacationServiceImpl implements VacationService {
         // id返回到前端，当用户填写完申请的点击提交后，前端带着用户填写的数据和processInstanceId请求后端，完成对应的用户任务。
         System.err.println("流程启动成功。");
         // 查询第一个任务
-        runtimeService.setVariable(processInstance.getId(), "isBack", "n");
+        runtimeService.setVariable(processInstance.getId(), "isBack", false);   // 设置回退标志的默认值
         Task firstTask = taskService.createTaskQuery()
                 .processInstanceId(processInstance.getId()).singleResult();
         // 设置任务受理人
@@ -122,7 +122,7 @@ public class VacationServiceImpl implements VacationService {
         // id返回到前端，当用户填写完申请的点击提交后，前端带着用户填写的数据和processInstanceId请求后端，完成对应的用户任务。
         System.err.println("流程启动成功。");
         // 查询第一个任务
-        runtimeService.setVariable(processInstance.getId(), "isBack", "n");
+        runtimeService.setVariable(processInstance.getId(), "isBack", false);
         Task firstTask = taskService.createTaskQuery()
                 .processInstanceId(processInstance.getId()).singleResult();
         // 设置任务受理人
@@ -164,7 +164,7 @@ public class VacationServiceImpl implements VacationService {
         System.err.println("完成任务时的taskId 是："+ taskId);
         Task task = taskService.createTaskQuery()
                 .taskId(taskId).singleResult();
-        
+        runtimeService.setVariable(processInstance.getId(), "isBack", false);   // 设置回退标志的默认值
         String taskName = task.getName();
         
         taskService.setAssignee(taskId, userId);
@@ -186,6 +186,7 @@ public class VacationServiceImpl implements VacationService {
         
         try {
             if(vars.get("startDate") != null) {
+                System.err.println("接收到的日期为： "+formatter.parse((String) vars.get("startDate")));
                 vc.setBeginDate(formatter.parse((String) vars.get("startDate")));
             }
             if(vars.get("endDate") != null) {
@@ -325,12 +326,11 @@ public class VacationServiceImpl implements VacationService {
         // taskService.getIdentityLinksForTask(taskId);
         List<VacationForm> vacations = new ArrayList<>();
         // 获取是否是回退回来的任务。
-        String isBack = (String) runtimeService.getVariable(processInstance.getId(), "isBack");
+        boolean isBack = (boolean) runtimeService.getVariable(processInstance.getId(), "isBack");
         System.out.println("办理任务界面获取的回退标志是："+isBack);
-        if(!"n".equals(isBack)) {
+        if(isBack) {
             vacations = getFormItems(processInstance, false);
             // 如果是回退回来的任务，则单独处理，需要添加不通过原因,
-            String noPassTaskId = isBack;       // 指明在哪个任务里审批不通过。
             // ProcessInstance pi = getProcessInstance(noPassTaskId);
             // 不通过的原因
             //String noPassReason = (String) taskService.getVariable(noPassTaskId, "noPassReason");
@@ -354,7 +354,6 @@ public class VacationServiceImpl implements VacationService {
                 vacationForm.setValue(formProperty.getValue());
                 vacationForm.setDisabled(false);
                 vacations.add(vacationForm);
-                // System.err.println("办理任务页面表单属性： "+ formProperty.getName());
             }
         }
         

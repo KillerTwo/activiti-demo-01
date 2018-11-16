@@ -37,7 +37,7 @@ public class MyTaskListener implements Serializable {
                 .createProcessInstanceQuery()
                 .processInstanceId(task.getProcessInstanceId())
                 .singleResult();
-        String isBack = (String) runtimeService.getVariable(pi.getId(), "isBack");  // 回退标志
+        //String isBack = (String) runtimeService.getVariable(pi.getId(), "isBack");  // 回退标志
         /*System.err.println("监听器监听到不是回退。");
         System.err.println("监听器中获取的回退标志isBack是 ："+ isBack);*/
         if(!pass.equals("同意")) {
@@ -45,7 +45,9 @@ public class MyTaskListener implements Serializable {
             // 设置不同过原因（流程参数）
             runtimeService.setVariable(pi.getId(), "noPassReason", noPassReason);
             // 不同意则设置回退标志（流程参数）
-            runtimeService.setVariable(pi.getId(), "isBack", taskId);                   // 将回退标志设置为当前任务id，表示是由该任务回退的。
+            runtimeService.setVariable(pi.getId(), "isBack", true);                   // 将回退标志设置为当前任务id，表示是由该任务回退的。
+        }else {
+            runtimeService.setVariable(pi.getId(), "isBack", false);                   // 将回退标志设置为false，表示是由该任务不是回退任务。
         }
     }
 }

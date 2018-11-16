@@ -100,7 +100,7 @@ public class VacationController {
         System.err.println("登陆的用户id是: "+ user.getId());
         String taskId = (String) vars.get("taskId");
         vars.put("userId", user.getId());
-        
+        vars.put("concel", 'n');                            // 设置取消属性为n，表示不取消申请
         String taskName = vacationService.complete(taskId, user.getId(), vars);
         System.err.println("任务名称是 ["+taskName+"]的任务已经被完成。");
         
