@@ -71,8 +71,8 @@ public class VacationServiceImpl implements VacationService {
         // 将processInstance
         // id返回到前端，当用户填写完申请的点击提交后，前端带着用户填写的数据和processInstanceId请求后端，完成对应的用户任务。
         System.err.println("流程启动成功。");
-     // 查询第一个任务
-       
+        // 查询第一个任务
+        runtimeService.setVariable(processInstance.getId(), "isBack", "n");
         Task firstTask = taskService.createTaskQuery()
                 .processInstanceId(processInstance.getId()).singleResult();
         // 设置任务受理人
@@ -86,11 +86,15 @@ public class VacationServiceImpl implements VacationService {
         
         List<VacationForm> formList = new ArrayList<>();
         for (FormProperty formProperty : props) {
-            VacationForm vacationForm = new VacationForm();
-            vacationForm.setKey(formProperty.getId());
-            vacationForm.setTitle(formProperty.getName());
-            vacationForm.setValue(formProperty.getValue());
-            formList.add(vacationForm);
+            // 将除了回退标志以外的表单属性输出到前端填写值
+            if(!"isBack".equals(formProperty.getId()) && !"concel".equals(formProperty.getId())) {
+                VacationForm vacationForm = new VacationForm();
+                vacationForm.setKey(formProperty.getId());
+                vacationForm.setTitle(formProperty.getName());
+                vacationForm.setValue(formProperty.getValue());
+                formList.add(vacationForm);
+            }
+            
         }
         
         map.put("processInstanceId", processInstance.getId());
@@ -98,6 +102,57 @@ public class VacationServiceImpl implements VacationService {
         map.put("taskId", firstTask.getId());
         return map;
     }
+    
+    
+    /**
+     * @param 启动流程(接收参数用户真实姓名)，为流程实例设置名称
+     * return ProcessInstance id(返回启动流程后对应的流程实例id)
+     */
+    @Override
+    public Map<String, Object> startProcess(String LastName) {
+        Map<String, Object> map = new HashMap<>();
+        // 获取请假流程对应的流程定义
+        /*ProcessDefinition processDefinition = repositoryService.createProcessDefinitionQuery()
+                .processDefinitionKey("Vacation").singleResult();*/
+        // 启动请假流程
+        ProcessInstance processInstance = runtimeService.startProcessInstanceByKey("Vacation");
+        runtimeService.setProcessInstanceName(processInstance.getId(), LastName+"请假申请");
+        System.err.println("申请名称： "+ processInstance.getName());
+        // 将processInstance
+        // id返回到前端，当用户填写完申请的点击提交后，前端带着用户填写的数据和processInstanceId请求后端，完成对应的用户任务。
+        System.err.println("流程启动成功。");
+        // 查询第一个任务
+        runtimeService.setVariable(processInstance.getId(), "isBack", "n");
+        Task firstTask = taskService.createTaskQuery()
+                .processInstanceId(processInstance.getId()).singleResult();
+        // 设置任务受理人
+        // taskService.setAssignee(firstTask.getId(), vacation.getUserId());
+        // 记录请假数据
+        // saveVacation(vacation, pi.getId());
+        
+        System.err.println("启动流程时taskId 是："+ firstTask.getId());
+        FormData formData = formService.getTaskFormData(firstTask.getId());
+        List<FormProperty> props = formData.getFormProperties();
+        
+        List<VacationForm> formList = new ArrayList<>();
+        for (FormProperty formProperty : props) {
+            // 将除了回退标志以外的表单属性输出到前端填写值
+            if(!"isBack".equals(formProperty.getId()) && !"concel".equals(formProperty.getId())) {
+                VacationForm vacationForm = new VacationForm();
+                vacationForm.setKey(formProperty.getId());
+                vacationForm.setTitle(formProperty.getName());
+                vacationForm.setValue(formProperty.getValue());
+                formList.add(vacationForm);
+            }
+            
+        }
+        
+        map.put("processInstanceId", processInstance.getId());
+        map.put("formData", formList);
+        map.put("taskId", firstTask.getId());
+        return map;
+    }
+    
 
     /**
      * return 完成请假申请业务任务，
@@ -126,17 +181,23 @@ public class VacationServiceImpl implements VacationService {
      */
     public void saveVacation(Map<String, Object> vars,ProcessInstance processInstance) {
         Vacation vc = new Vacation();
+        
         SimpleDateFormat formatter = new SimpleDateFormat("yyyy-MM-dd");
+        
         try {
-            vc.setBeginDate(formatter.parse((String) vars.get("startDate")));
-            vc.setEndDate(formatter.parse((String)vars.get("endDate")));
+            if(vars.get("startDate") != null) {
+                vc.setBeginDate(formatter.parse((String) vars.get("startDate")));
+            }
+            if(vars.get("endDate") != null) {
+                vc.setEndDate(formatter.parse((String)vars.get("endDate")));
+            }
         } catch (ParseException e) {
             e.printStackTrace();
         }
-        vc.setDays(Integer.parseInt((String) vars.get("days")));
+        vc.setDays(Integer.parseInt((String) vars.getOrDefault("days","0")));
         
         vc.setProcessInstanceId(processInstance.getId());
-        vc.setReason((String)vars.get("reason"));
+        vc.setReason((String)vars.getOrDefault("reason",""));
         vc.setUserId((String)vars.get("userId"));
         vacationRepository.save(vc);
     }
@@ -262,20 +323,42 @@ public class VacationServiceImpl implements VacationService {
         // String isPass = (String) taskService.getVariable(taskId, "ispass");
         // 获取当前任务自己的表单属性
         // taskService.getIdentityLinksForTask(taskId);
-        List<VacationForm> vacations = getFormItems(processInstance);
-        
-        FormData formData = formService.getTaskFormData(taskId);
-        List<FormProperty> props = formData.getFormProperties();
-        for (FormProperty formProperty : props) {
-            
+        List<VacationForm> vacations = new ArrayList<>();
+        // 获取是否是回退回来的任务。
+        String isBack = (String) runtimeService.getVariable(processInstance.getId(), "isBack");
+        System.out.println("办理任务界面获取的回退标志是："+isBack);
+        if(!"n".equals(isBack)) {
+            vacations = getFormItems(processInstance, false);
+            // 如果是回退回来的任务，则单独处理，需要添加不通过原因,
+            String noPassTaskId = isBack;       // 指明在哪个任务里审批不通过。
+            // ProcessInstance pi = getProcessInstance(noPassTaskId);
+            // 不通过的原因
+            //String noPassReason = (String) taskService.getVariable(noPassTaskId, "noPassReason");
+            String noPassReason = (String) runtimeService.getVariable(processInstance.getId(), "noPassReason");
             VacationForm vacationForm = new VacationForm();
-            vacationForm.setTitle(formProperty.getName());
-            vacationForm.setKey(formProperty.getId());
-            vacationForm.setValue(formProperty.getValue());
-            vacationForm.setDisabled(false);
+            vacationForm.setKey("noPassReason");
+            vacationForm.setDisabled(true);
+            vacationForm.setTitle("审核不通过原因");
+            vacationForm.setValue(noPassReason);
             vacations.add(vacationForm);
-            // System.err.println("办理任务页面表单属性： "+ formProperty.getName());
+        }else {
+            // 不是回退的任务
+            vacations = getFormItems(processInstance, true);
+            FormData formData = formService.getTaskFormData(taskId);
+            List<FormProperty> props = formData.getFormProperties();
+            for (FormProperty formProperty : props) {
+                
+                VacationForm vacationForm = new VacationForm();
+                vacationForm.setTitle(formProperty.getName());
+                vacationForm.setKey(formProperty.getId());
+                vacationForm.setValue(formProperty.getValue());
+                vacationForm.setDisabled(false);
+                vacations.add(vacationForm);
+                // System.err.println("办理任务页面表单属性： "+ formProperty.getName());
+            }
         }
+        
+        vars.put("isBack", isBack);
         vars.put("forms", vacations);
         
         return vars;
@@ -285,7 +368,7 @@ public class VacationServiceImpl implements VacationService {
      * @param processInstance
      * @return
      */
-    public List<VacationForm> getFormItems(ProcessInstance processInstance) {
+    public List<VacationForm> getFormItems(ProcessInstance processInstance, boolean disabled) {
         List<VacationForm> vacations = new ArrayList<>();
         
         String startDate = (String) runtimeService.getVariable(processInstance.getId(), "startDate");
@@ -293,7 +376,7 @@ public class VacationServiceImpl implements VacationService {
         vacationForm.setTitle("开始时间");
         vacationForm.setKey("startDate");
         vacationForm.setValue(startDate);
-        vacationForm.setDisabled(true);
+        vacationForm.setDisabled(disabled);
         vacations.add(vacationForm);
         
         String endDate = (String) runtimeService.getVariable(processInstance.getId(), "endDate");
@@ -301,7 +384,7 @@ public class VacationServiceImpl implements VacationService {
         vacationForm1.setTitle("结束时间");
         vacationForm1.setKey("endDate");
         vacationForm1.setValue(endDate);
-        vacationForm1.setDisabled(true);
+        vacationForm1.setDisabled(disabled);
         vacations.add(vacationForm1);
         
         String userName = (String) runtimeService.getVariable(processInstance.getId(), "userName");
@@ -309,7 +392,7 @@ public class VacationServiceImpl implements VacationService {
         vacationForm2.setTitle("申请人姓名");
         vacationForm2.setKey("userName");
         vacationForm2.setValue(userName);
-        vacationForm2.setDisabled(true);
+        vacationForm2.setDisabled(disabled);
         vacations.add(vacationForm2);
         
         String days = (String) runtimeService.getVariable(processInstance.getId(), "days");
@@ -317,7 +400,7 @@ public class VacationServiceImpl implements VacationService {
         vacationForm3.setTitle("请假天数");
         vacationForm3.setKey("days");
         vacationForm3.setValue(days);
-        vacationForm3.setDisabled(true);
+        vacationForm3.setDisabled(disabled);
         vacations.add(vacationForm3);
         
         String reason = (String) runtimeService.getVariable(processInstance.getId(), "reason");
@@ -325,7 +408,7 @@ public class VacationServiceImpl implements VacationService {
         vacationForm4.setTitle("请假原因");
         vacationForm4.setKey("reason");
         vacationForm4.setValue(reason);
-        vacationForm4.setDisabled(true);
+        vacationForm4.setDisabled(disabled);
         vacations.add(vacationForm4);
         
         return vacations;
@@ -349,9 +432,11 @@ public class VacationServiceImpl implements VacationService {
                 map.put(key, vars.get(key));
             }
             taskService.complete(taskId, map);
+            System.err.println("任务被完成。。");
         }
         else {
             taskService.complete(taskId);
+            System.err.println("任务被完成。。");
         }
         return taskName;
     }

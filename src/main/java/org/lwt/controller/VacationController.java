@@ -6,6 +6,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.ArrayList;
+import java.util.Base64;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -252,7 +253,7 @@ public class VacationController {
         return map;
     }
     /**
-     * 点击查看申请流程
+     * 点击查看申请流程图
      * @return
      */
     @RequestMapping(value="/show/{processInstanceId}")
@@ -265,24 +266,29 @@ public class VacationController {
     
     // 显示流程图
     @RequestMapping(value="/diagram/{processInstanceId}")
-    public String showDiagram(@PathVariable String processInstanceId, HttpServletResponse response) {
-        OutputStream out = null;
+    @ResponseBody
+    public Map<String, Object> showDiagram(@PathVariable String processInstanceId) {
+        Map<String, Object> map = new HashMap<>();
+        byte[] bytes = null;
         try {
             //HttpServletResponse response = ServletActionContext.getResponse();
             InputStream is = vacationService.getDiagram(processInstanceId);
-            response.setContentType("multipart/form-data;charset=utf8");
+            bytes = getImgByte(is);
+            String imgBase64 = Base64.getEncoder().encodeToString(bytes);
+            map.put("imgBase64", imgBase64);
+            /*response.setContentType("multipart/form-data;charset=utf8");
             out = response.getOutputStream();
             out.write(getImgByte(is));
-            out.flush();
+            out.flush();*/
         } catch (Exception e) {
             e.printStackTrace();
         } finally {
             try {
-                out.close();
+                //out.close();
             } catch (Exception e) {
             }
         }
-        return null;
+        return map;
     }
     
     

@@ -14,6 +14,13 @@ public interface VacationService {
      */
     Map<String, Object> startProcess();
     /**
+     *  接收用户真实姓名为流程实例设置名称
+     * @param userId
+     * @return
+     */
+    Map<String, Object> startProcess(String userId);
+    
+    /**
      * param 完成任务
      * @param userId
      */
